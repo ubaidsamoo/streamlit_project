@@ -1,27 +1,68 @@
 import streamlit as st
 import numpy as np
+import glob
+import os
 from PIL import Image
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+    _HAS_MATPLOTLIB = True
+except Exception:
+    plt = None
+    _HAS_MATPLOTLIB = False
 from typing import Tuple
-from tensorflow.keras.models import load_model
+try:
+    from tensorflow.keras.models import load_model  # type: ignore
+    _HAS_TF = True
+except Exception:
+    try:
+        from keras.models import load_model  # type: ignore
+        _HAS_TF = True
+    except Exception:
+        load_model = None
+        _HAS_TF = False
+
+
+# Lightweight deterministic demo model used when no .h5 is provided.
+class DummyModel:
+    """Simple deterministic predictor for UI/demo purposes only.
+
+    The prediction is derived from the mean pixel intensity so results
+    are consistent for the same input and give a plausible single-digit
+    peak probability distribution.
+    """
+    def predict(self, input_array: np.ndarray) -> np.ndarray:
+        # input_array expected shape: (1, 28, 28, 1) or (1, 784)
+        m = float(np.mean(input_array))
+        # map mean (0..1) to digit 0..9 (darker -> higher digit)
+        pred_digit = int(np.clip(round((1.0 - m) * 9), 0, 9))
+        probs = np.full(10, 0.01, dtype=np.float32)
+        probs[pred_digit] = 0.9
+        probs = probs / probs.sum()
+        return probs.reshape(1, 10)
 
 
 # -------------------------------
 # Config
 # -------------------------------
-MODEL_CANDIDATES = [
-    "digit_model.h5",
-    "path_to_your_trained_model.h5",
-    "model.h5",
-]
+def find_model_candidates() -> list:
+    """Return a sorted list of .h5 model files in the app folder."""
+    cwd = os.path.dirname(__file__) or os.getcwd()
+    files = sorted(glob.glob(os.path.join(cwd, "*.h5")))
+    # Return basenames for nicer display
+    return [os.path.basename(f) for f in files]
 
 
 @st.cache_resource
-def load_digit_model(model_paths: list = MODEL_CANDIDATES):
+def load_digit_model(model_paths: list):
     """Try to load the first available model from model_paths.
 
     Returns the loaded model or raises a RuntimeError if none found.
     """
+    if load_model is None:
+        raise RuntimeError(
+            "No Keras/TensorFlow loader available. Install TensorFlow or Keras: `pip install tensorflow` or `pip install keras`."
+        )
+
     last_exc = None
     for p in model_paths:
         try:
@@ -61,6 +102,10 @@ def predict(model, input_array: np.ndarray) -> np.ndarray:
 
 
 def plot_probabilities(preds: np.ndarray):
+    # If matplotlib isn't available, return the raw probability vector
+    if not _HAS_MATPLOTLIB:
+        return preds[0]
+
     fig, ax = plt.subplots(figsize=(5, 2.2))
     probs = preds[0]
     ax.bar(range(10), probs, color="#4c78a8")
@@ -80,17 +125,32 @@ def main() -> None:
 
     # Sidebar
     st.sidebar.header("Settings")
-    model_choice = st.sidebar.selectbox("Model file to try", options=MODEL_CANDIDATES)
+    model_files = find_model_candidates()
+    if model_files:
+        model_choice = st.sidebar.selectbox("Model file to try", options=model_files)
+    else:
+        model_choice = None
+        st.sidebar.info("No .h5 model files found in app folder; the app will use the demo predictor.")
     use_cnn = st.sidebar.checkbox("Model is CNN (28x28x1)", value=True)
     show_raw_pixels = st.sidebar.checkbox("Show 28x28 pixel preview", value=False)
 
-    # Load model (attempt)
+    # Load model (attempt). If loading fails (missing TF or .h5 file), fall back
+    # to the lightweight DummyModel automatically so the UI remains usable.
     try:
-        model = load_digit_model([model_choice])
+        if model_choice:
+            model = load_digit_model([model_choice])
+            if model is None:
+                # load_digit_model should return a model, but be defensive
+                st.sidebar.warning("Model loader returned no model; using demo predictor.")
+                model = DummyModel()
+                st.info("Running in demo mode — predictions are synthetic and for testing only.")
+        else:
+            raise RuntimeError("No model files provided")
     except RuntimeError as e:
-        st.sidebar.error(str(e))
-        st.error("Model not available. Please place a trained Keras .h5 model in the app folder and select it in the sidebar.")
-        st.stop()
+        # Show the original message but continue with demo model instead of stopping.
+        st.sidebar.warning(str(e))
+        st.info("No usable model found; running with demo predictor so the UI stays functional.")
+        model = DummyModel()
 
     st.write("Upload a handwritten digit image (PNG/JPG) or use the sample below.")
 
@@ -128,7 +188,7 @@ def main() -> None:
     c1, c2 = st.columns([1, 2])
     with c1:
         st.subheader("Uploaded")
-        st.image(uploaded_image, use_column_width=True)
+        st.image(uploaded_image, use_container_width=True)
         st.subheader("Processed 28x28")
         st.image(display_img, width=140)
         if show_raw_pixels:
@@ -139,8 +199,14 @@ def main() -> None:
         st.markdown(f"**Digit:** {predicted}")
         st.markdown(f"**Confidence:** {confidence:.2f}%")
         st.subheader("Probabilities")
-        fig = plot_probabilities(preds)
-        st.pyplot(fig, clear_figure=True)
+        fig_or_probs = plot_probabilities(preds)
+        if _HAS_MATPLOTLIB and fig_or_probs is not None:
+            st.pyplot(fig_or_probs, clear_figure=True)
+        else:
+            # Fallback: use Streamlit's bar chart when matplotlib is not available
+            probs = fig_or_probs if fig_or_probs is not None else preds[0]
+            # Convert to a 2D structure that st.bar_chart accepts
+            st.bar_chart(np.array([probs]), height=220)
 
 
 if __name__ == "__main__":
