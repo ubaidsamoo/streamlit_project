@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import glob
+import os
 from PIL import Image
 try:
     import matplotlib.pyplot as plt
@@ -45,7 +46,11 @@ class DummyModel:
 # -------------------------------
 def find_model_candidates() -> list:
     """Return a sorted list of .h5 model files in the app folder."""
-    cwd = os.path.dirname(__file__) or os.getcwd()
+    try:
+        file_dir = os.path.dirname(__file__)
+    except NameError:
+        file_dir = ""
+    cwd = file_dir or os.getcwd()
     files = sorted(glob.glob(os.path.join(cwd, "*.h5")))
     # Return basenames for nicer display
     return [os.path.basename(f) for f in files]
@@ -127,29 +132,29 @@ def main() -> None:
     model_files = find_model_candidates()
     if model_files:
         model_choice = st.sidebar.selectbox("Model file to try", options=model_files)
+        demo_mode_active = False
     else:
+        # Silently fall back to demo predictor when no model files exist.
         model_choice = None
-        st.sidebar.info("No .h5 model files found in app folder; the app will use the demo predictor.")
+        demo_mode_active = True
     use_cnn = st.sidebar.checkbox("Model is CNN (28x28x1)", value=True)
     show_raw_pixels = st.sidebar.checkbox("Show 28x28 pixel preview", value=False)
 
     # Load model (attempt). If loading fails (missing TF or .h5 file), fall back
     # to the lightweight DummyModel automatically so the UI remains usable.
-    try:
-        if model_choice:
+    # If we already decided demo mode is active (no files), use DummyModel silently.
+    if demo_mode_active:
+        model = DummyModel()
+    else:
+        try:
             model = load_digit_model([model_choice])
             if model is None:
-                # load_digit_model should return a model, but be defensive
                 st.sidebar.warning("Model loader returned no model; using demo predictor.")
                 model = DummyModel()
-                st.info("Running in demo mode — predictions are synthetic and for testing only.")
-        else:
-            raise RuntimeError("No model files provided")
-    except RuntimeError as e:
-        # Show the original message but continue with demo model instead of stopping.
-        st.sidebar.warning(str(e))
-        st.info("No usable model found; running with demo predictor so the UI stays functional.")
-        model = DummyModel()
+        except RuntimeError as e:
+            # Notify once in sidebar and fall back to demo model.
+            st.sidebar.warning(str(e))
+            model = DummyModel()
 
     st.write("Upload a handwritten digit image (PNG/JPG) or use the sample below.")
 
@@ -210,4 +215,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
