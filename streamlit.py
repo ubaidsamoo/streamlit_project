@@ -52,8 +52,8 @@ def find_model_candidates() -> list:
         file_dir = ""
     cwd = file_dir or os.getcwd()
     files = sorted(glob.glob(os.path.join(cwd, "*.h5")))
-    # Return basenames for nicer display
-    return [os.path.basename(f) for f in files]
+    # Return absolute paths so loading works regardless of current working dir
+    return [os.path.abspath(f) for f in files]
 
 
 @st.cache_resource
@@ -131,7 +131,12 @@ def main() -> None:
     st.sidebar.header("Settings")
     model_files = find_model_candidates()
     if model_files:
-        model_choice = st.sidebar.selectbox("Model file to try", options=model_files)
+        # show basenames in the selectbox but keep the full path as value
+        model_choice = st.sidebar.selectbox(
+            "Model file to try",
+            options=model_files,
+            format_func=lambda p: os.path.basename(p),
+        )
         demo_mode_active = False
     else:
         # Silently fall back to demo predictor when no model files exist.
