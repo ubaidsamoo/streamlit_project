@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import glob
-import os
 from PIL import Image
 try:
     import matplotlib.pyplot as plt
@@ -211,3 +210,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
