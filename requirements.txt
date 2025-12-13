@@ -1,7 +1,6 @@
-pandas
-scikit-learn
-statsmodels
-yfinance
-matplotlib
-numpy
+tensorflow
 streamlit
+numpy<2.0
+pillow
+matplotlib
+opencv-python
