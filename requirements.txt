@@ -1,0 +1,6 @@
+tensorflow
+streamlit
+numpy>=2.1.0
+pillow
+matplotlib
+opencv-python
