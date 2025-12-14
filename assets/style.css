@@ -1,0 +1,150 @@
+/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary-color: #00bcd4; /* Cyan */
+    --secondary-color: #ff4081; /* Pink */
+    --bg-color: #0f172a; /* Dark Blue Slate */
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --text-color: #f1f5f9;
+    --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+html, body, [class*="css"] {
+    font-family: 'Outfit', sans-serif;
+    color: var(--text-color);
+    background-color: var(--bg-color);
+}
+
+/* Hide Streamlit Default Elements */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Custom Title */
+.title-container {
+    text-align: center;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    animation: fadeInDown 1s ease-out;
+}
+
+.title-text {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: transparent;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(0, 188, 212, 0.5);
+}
+
+.subtitle-text {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
+}
+
+/* Glassmorphism Card */
+.glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 20px;
+    border: var(--glass-border);
+    padding: 2rem;
+    margin: 1rem 0;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    transition: transform 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Upload Section */
+.upload-section {
+    text-align: center;
+    border: 2px dashed var(--primary-color);
+    border-radius: 15px;
+    padding: 3rem;
+    background: rgba(0, 188, 212, 0.05);
+    transition: all 0.3s ease;
+}
+
+.upload-section:hover {
+    background: rgba(0, 188, 212, 0.1);
+    box-shadow: 0 0 15px rgba(0, 188, 212, 0.3);
+}
+
+/* Buttons */
+.stButton > button {
+    background: linear-gradient(45deg, var(--primary-color), #00acc1);
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 30px;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.stButton > button:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.6);
+}
+
+/* Results */
+.prediction-box {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-top: 2rem;
+    animation: slideUp 0.8s ease-out;
+}
+
+.prediction-tumor {
+    background: rgba(255, 64, 129, 0.1);
+    border: 1px solid var(--secondary-color);
+}
+
+.prediction-safe {
+    background: rgba(0, 230, 118, 0.1);
+    border: 1px solid #00e676;
+}
+
+.result-text {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.confidence-text {
+    font-size: 1.2rem;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
