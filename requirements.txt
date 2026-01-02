@@ -1,8 +1,10 @@
 tensorflow
 streamlit
-numpy
-pandas
+numpy<2
 pillow
 matplotlib
+opencv-python
+yfinance
+statsmodels
 scikit-learn
-opencv-python-headless
+pandas
