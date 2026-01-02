@@ -27,6 +27,8 @@ def load_data(ticker: str, period: str = '5y') -> pd.DataFrame:
     return data
 
 
+
+
 def plot_line(ax, series, label=None):
     ax.plot(series.index, series.values, label=label)
 
